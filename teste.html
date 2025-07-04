@@ -1,0 +1,86 @@
+<div id="conectar">Conectar</div>
+<br>
+<br>
+<div id="selecao"></div>
+
+
+
+<script>
+    let ws = null;
+    const conectar = document.getElementById("conectar");
+    const selecao = document.getElementById("selecao");
+
+    var personagens;
+
+    conectar.addEventListener("click", function() {
+        if (conectar.id === "conectar") {
+            // Conectar
+            ws = new WebSocket("ws://localhost:8080");
+            ws.onopen = () => {
+                console.log("Conectado ao servidor WebSocket");
+            };
+
+            ws.onclose = () => {
+                console.log(`Client disconnected (id=${ws.id})`);
+                ws = null;
+                selecao.remove();
+                conectar.id = "conectar";
+                conectar.innerHTML = "Conectar";
+            };
+          ws.onmessage = (event) => {
+
+            console.log(event);
+            personagens = JSON.parse(event.data);
+            console.log(personagens);
+
+            // Limpa a div antes de adicionar o select
+            selecao.innerHTML = "";
+
+            // Cria o select
+            let select = document.createElement("select");
+            select.id = "personagemSelect";
+
+            // Adiciona as opções
+            for (let nome in personagens) {
+                let option = document.createElement("option");
+                option.value = nome;
+                option.text = nome;
+                select.appendChild(option);
+            }
+            let btnEscolher = document.createElement("button");
+            btnEscolher.id = "escolherPersonagem";
+            btnEscolher.textContent = "Escolher Personagem";
+
+            btnEscolher.onclick = function() {
+                const personagemSelecionado = document.getElementById("personagemSelect").value;
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        tipo: "personagem_escolhido",
+                        personagem: personagemSelecionado
+                    }));
+                    console.log("Personagem enviado:", personagemSelecionado);
+                    btnEscolher.remove();
+                    select.remove();
+                }
+            };
+
+            //Renderiza o jogo
+           
+            // Adiciona o select e o botão na div
+            selecao.appendChild(select);
+            selecao.appendChild(btnEscolher);
+        };
+            ws.onerror = (err) => {
+                console.error("Erro WebSocket:", err);
+            };
+            conectar.id = "desconectar";
+            conectar.innerHTML = "Desconectar";
+        } else {
+            // Desconectar
+            if (ws) {
+                ws.close();
+            }
+            // O resto é tratado no ws.onclose
+        }
+    }); 
+</script>
